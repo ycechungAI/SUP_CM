@@ -57,6 +57,15 @@ def install_homebrew():
     print("Homebrew installed.")
 
 def install_chocolatey():
+    choco_path = os.path.join(os.environ.get("ProgramData", "C:\\ProgramData"), "chocolatey")
+    if os.path.isdir(choco_path):
+        print("Warning: An existing Chocolatey directory was found.")
+        print(f"If the 'choco' command is not working, your installation may be broken or your PATH may not be configured correctly.")
+        print("Please inspect the contents of the directory below and consider reinstalling Chocolatey manually.")
+        print(f"Directory: {choco_path}")
+        print("To attempt a manual re-installation, you may need to delete this directory first.")
+        sys.exit(1)
+
     print("Installing Chocolatey...")
     install_cmd = (
         "Set-ExecutionPolicy Bypass -Scope Process -Force; "
@@ -65,7 +74,7 @@ def install_chocolatey():
         "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
     )
     subprocess.check_call(["powershell.exe", "-Command", install_cmd])
-    os.environ["Path"] += os.pathsep + "C:\\ProgramData\\chocolatey\\bin"
+    os.environ["Path"] += os.pathsep + os.path.join(choco_path, "bin")
     print("Chocolatey installed.")
 
 def generate_playbook(client, os_name, programs, template=None, error=None, previous_content=None):
