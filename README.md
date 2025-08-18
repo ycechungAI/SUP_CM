@@ -35,37 +35,39 @@ There are two ways to install AES_CM: from PyPI or from the source.
     pip install aes-cm
     ```
 
-### From Source (for development)
+### Running Locally for Development
+
+To run the project on your local machine for development purposes, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/ycechung-cm/your_repository.git
-    cd your_repository
+    git clone https://github.com/ycechungAI/SUP_CM.git
+    cd SUP_CM
     ```
 
-2.  **Install in editable mode:**
-    This will install the package and its dependencies. The `-e` flag allows you to edit the code and have the changes apply immediately.
+2.  **Set up a virtual environment (Recommended):**
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
+
+3.  **Install the project in editable mode:**
+    This command installs all the dependencies and makes the script available as a command-line tool. The `-e` flag means that any changes you make to the source code will be immediately effective when you run the command.
     ```bash
     pip install -e .
     ```
 
-## Configuration
+4.  **Set up your API Key:**
+    Create a `.env` file in the project's root directory:
+    ```
+    OPENAI_API_KEY=your_api_key_here
+    ```
 
-Before running the program, you need to set up your OpenAI API key. Create a `.env` file in the directory where you will run the command:
-
-```
-OPENAI_API_KEY=your_api_key_here
-```
-
-The program will automatically find and use this `.env` file.
-
-## Usage
-
-Once installed, you can run the program from your terminal using the `program-installer` command:
-
-```bash
-program-installer
-```
+5.  **Run the program:**
+    Now you can run the program using the command:
+    ```bash
+    program-installer
+    ```
 
 The script will guide you through the process:
 

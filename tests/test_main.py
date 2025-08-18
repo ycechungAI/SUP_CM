@@ -176,7 +176,8 @@ def test_get_program_list_basic(mock_input):
     """
     Test that get_program_list returns the basic list when 'a' is chosen.
     """
-    programs = main.get_program_list('darwin')
+    choice, programs = main.get_program_list('darwin')
+    assert choice == 'a'
     assert programs == main.BASIC_PROGRAMS['darwin']
 
 @patch('builtins.input', return_value='b')
@@ -184,7 +185,8 @@ def test_get_program_list_developer(mock_input):
     """
     Test that get_program_list returns the developer list when 'b' is chosen.
     """
-    programs = main.get_program_list('windows')
+    choice, programs = main.get_program_list('windows')
+    assert choice == 'b'
     assert programs == main.DEVELOPER_PROGRAMS['windows']
 
 @patch('builtins.input', side_effect=['c', 'custom-prog1, custom-prog2'])
@@ -192,7 +194,8 @@ def test_get_program_list_custom(mock_input):
     """
     Test that get_program_list returns a custom list when 'c' is chosen.
     """
-    programs = main.get_program_list('linux')
+    choice, programs = main.get_program_list('linux')
+    assert choice == 'c'
     assert programs == ['custom-prog1', 'custom-prog2']
 
 @patch('platform.system', return_value='darwin')
@@ -246,6 +249,7 @@ def test_main_macos(
 
     # Check playbook generation and execution
     mock_generate_playbook.assert_called_once()
+    # The template loading is tested in other tests. Here we focus on the main flow.
     mock_open_file.assert_called_with('ansible_playbook.yml', 'w')
     mock_open_file().write.assert_called_once_with('generated_playbook_content')
     mock_check_output.assert_called_with(
@@ -253,3 +257,58 @@ def test_main_macos(
         stderr=subprocess.STDOUT
     )
     assert any(['ansible-playbook', 'ansible_playbook.yml', '-v'] in call.args for call in mock_check_call.call_args_list)
+
+@patch('sys.argv', ['program-installer', '--help'])
+def test_main_help(capsys):
+    """
+    Test that the --help flag prints a help message and exits.
+    """
+    with pytest.raises(SystemExit) as e:
+        main.main()
+    assert e.type == SystemExit
+    assert e.value.code == 0
+    captured = capsys.readouterr()
+    assert "usage: program-installer" in captured.out
+    assert "show this help message and exit" in captured.out
+
+@patch('sys.argv', ['program-installer', '--version'])
+@patch('importlib.metadata.version', return_value='0.1')
+def test_main_version(mock_version, capsys):
+    """
+    Test that the --version flag prints the version and exits.
+    """
+    with pytest.raises(SystemExit) as e:
+        main.main()
+    assert e.type == SystemExit
+    assert e.value.code == 0
+    captured = capsys.readouterr()
+    assert "program-installer 0.1" in captured.out
+
+@patch('platform.system', return_value='darwin')
+@patch('program_installer.main.check_pip', return_value=True)
+@patch('program_installer.main.install_pip')
+@patch('program_installer.main.install_package')
+@patch('dotenv.load_dotenv')
+@patch('openai.OpenAI')
+@patch('builtins.input', return_value='b')
+@patch('program_installer.main.command_exists', return_value=True)
+@patch('subprocess.check_call')
+@patch('subprocess.check_output', return_value=b'Syntax check passed')
+@patch('builtins.open', new_callable=mock_open)
+@patch('program_installer.main.generate_playbook', return_value='generated_playbook_content')
+def test_main_developer_list(
+    mock_generate_playbook, mock_open_file, mock_check_output, mock_check_call,
+    mock_command_exists, mock_input, mock_openai, mock_load_dotenv,
+    mock_install_package, mock_install_pip, mock_check_pip, mock_system
+):
+    """
+    Test that the full developer template is used when option 'b' is selected.
+    """
+    os.environ['OPENAI_API_KEY'] = 'test_key'
+    main.main()
+
+    with open('template-full.yml', 'r') as f:
+        expected_template = f.read()
+
+    mock_generate_playbook.assert_called_once()
+    assert mock_generate_playbook.call_args[1]['template'] == expected_template

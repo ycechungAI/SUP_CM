@@ -167,16 +167,35 @@ def get_program_list(os_name):
         ).lower()
 
         if choice == 'a':
-            return BASIC_PROGRAMS.get(os_name, [])
+            return choice, BASIC_PROGRAMS.get(os_name, [])
         elif choice == 'b':
-            return DEVELOPER_PROGRAMS.get(os_name, [])
+            return choice, DEVELOPER_PROGRAMS.get(os_name, [])
         elif choice == 'c':
             programs_input = input("Enter the list of programs to install, separated by commas: ").strip()
-            return [p.strip() for p in programs_input.split(',') if p.strip()]
+            return choice, [p.strip() for p in programs_input.split(',') if p.strip()]
         else:
             print("Invalid choice. Please enter 'a', 'b', or 'c'.")
 
+import argparse
+from importlib import metadata
+
 def main():
+    try:
+        version = metadata.version("aes-cm")
+    except metadata.PackageNotFoundError:
+        version = "0.1"  # Fallback for local development
+
+    parser = argparse.ArgumentParser(
+        prog="program-installer",
+        description="A tool to automate the setup of a development environment on macOS, Linux, and Windows."
+    )
+    parser.add_argument(
+        '-v', '--version',
+        action='version',
+        version=f'%(prog)s {version}'
+    )
+    args = parser.parse_args()
+
     os_name = platform.system().lower()
 
     if os_name not in ("linux", "darwin", "windows"):
@@ -211,7 +230,7 @@ def main():
         print("Ansible does not support Windows as a control machine natively.")
         print("Skipping Ansible installation. Proceeding with program installation if applicable.")
 
-    programs = get_program_list(os_name)
+    choice, programs = get_program_list(os_name)
 
     if not programs:
         print("No programs specified.")
@@ -318,6 +337,20 @@ def main():
 """
 
     print("Generating Ansible playbook...")
+
+    # Determine which template to use
+    if choice == 'b':
+        template_path = 'template-full.yml'
+    else:
+        template_path = 'ansible_playbook_template.yml'
+
+    try:
+        with open(template_path, 'r') as f:
+            playbook_content_template = f.read()
+    except FileNotFoundError:
+        print(f"Warning: Template file not found at {template_path}. Proceeding without a template.")
+        playbook_content_template = None
+
     playbook_content = generate_playbook(client, os_name, programs, template=playbook_content_template)
 
     if not playbook_content or not playbook_content.strip():
