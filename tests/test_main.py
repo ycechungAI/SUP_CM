@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock, mock_open, call
-import main
+from program_installer import main
 import sys
 import subprocess
 import os
@@ -196,19 +196,19 @@ def test_get_program_list_custom(mock_input):
     assert programs == ['custom-prog1', 'custom-prog2']
 
 @patch('platform.system', return_value='darwin')
-@patch('main.check_pip', return_value=True)
-@patch('main.install_pip')
-@patch('main.install_package')
+@patch('program_installer.main.check_pip', return_value=True)
+@patch('program_installer.main.install_pip')
+@patch('program_installer.main.install_package')
 @patch('dotenv.load_dotenv')
 @patch('openai.OpenAI')
 @patch('builtins.input', side_effect=['c', 'vim, git'])
-@patch('main.command_exists')
-@patch('main.install_homebrew')
+@patch('program_installer.main.command_exists')
+@patch('program_installer.main.install_homebrew')
 @patch('subprocess.check_call')
 @patch('subprocess.check_output', return_value=b'Syntax check passed')
 @patch('builtins.open', new_callable=mock_open)
-@patch('main.advise_path_update')
-@patch('main.generate_playbook', return_value='generated_playbook_content')
+@patch('program_installer.main.advise_path_update')
+@patch('program_installer.main.generate_playbook', return_value='generated_playbook_content')
 def test_main_macos(
     mock_generate_playbook, mock_advise, mock_open_file, mock_check_output, mock_check_call,
     mock_install_homebrew, mock_command_exists, mock_input, mock_openai,
