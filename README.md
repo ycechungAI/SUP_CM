@@ -22,6 +22,8 @@ Why do we need? We have billions of new devices going to be added around the wor
 ## Prerequisites
 
 - Python 3.5+
+    - Tips for windows install python from Microsoft Store or dont forget to include it in your path
+    - For Mac use homebrew
 - An OpenAI API key
 - Git
 
