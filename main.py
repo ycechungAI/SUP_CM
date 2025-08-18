@@ -231,11 +231,35 @@ def main():
         name: python
         state: present
 
-    - name: Install a program (example)
+    - name: Install VLC
       homebrew_cask:
-        name: example-program
+        name: vlc
         state: present
-      ignore_errors: true
+
+    - name: Install DuckDuckGo
+      homebrew_cask:
+        name: duckduckgo
+        state: present
+
+    - name: Install Zoom
+      homebrew_cask:
+        name: zoom
+        state: present
+
+    - name: Install UTM
+      homebrew_cask:
+        name: utm
+        state: present
+
+    - name: Install Docker
+      homebrew_cask:
+        name: docker
+        state: present
+
+    - name: Install LM Studio
+      homebrew_cask:
+        name: lm-studio
+        state: present
 """
 
     print("Generating Ansible playbook...")
@@ -288,3 +312,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+  
