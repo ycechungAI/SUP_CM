@@ -171,13 +171,37 @@ def test_generate_playbook_fallback_fails(mock_sleep):
     ])
     assert mock_sleep.call_count == 6
 
+@patch('builtins.input', return_value='a')
+def test_get_program_list_basic(mock_input):
+    """
+    Test that get_program_list returns the basic list when 'a' is chosen.
+    """
+    programs = main.get_program_list('darwin')
+    assert programs == main.BASIC_PROGRAMS['darwin']
+
+@patch('builtins.input', return_value='b')
+def test_get_program_list_developer(mock_input):
+    """
+    Test that get_program_list returns the developer list when 'b' is chosen.
+    """
+    programs = main.get_program_list('windows')
+    assert programs == main.DEVELOPER_PROGRAMS['windows']
+
+@patch('builtins.input', side_effect=['c', 'custom-prog1, custom-prog2'])
+def test_get_program_list_custom(mock_input):
+    """
+    Test that get_program_list returns a custom list when 'c' is chosen.
+    """
+    programs = main.get_program_list('linux')
+    assert programs == ['custom-prog1', 'custom-prog2']
+
 @patch('platform.system', return_value='darwin')
 @patch('main.check_pip', return_value=True)
 @patch('main.install_pip')
 @patch('main.install_package')
 @patch('dotenv.load_dotenv')
 @patch('openai.OpenAI')
-@patch('builtins.input', side_effect=['b', 'vim, git'])
+@patch('builtins.input', side_effect=['c', 'vim, git'])
 @patch('main.command_exists')
 @patch('main.install_homebrew')
 @patch('subprocess.check_call')
@@ -225,7 +249,7 @@ def test_main_macos(
     mock_open_file.assert_called_with('ansible_playbook.yml', 'w')
     mock_open_file().write.assert_called_once_with('generated_playbook_content')
     mock_check_output.assert_called_with(
-        ['ansible-playbook', 'ansible_playbook.yml', '--syntax-check'],
+        ['ansible-playbook', 'ansible_playbook.yml', '--syntax-check', '-v'],
         stderr=subprocess.STDOUT
     )
-    assert any(['ansible-playbook', 'ansible_playbook.yml'] in call.args for call in mock_check_call.call_args_list)
+    assert any(['ansible-playbook', 'ansible_playbook.yml', '-v'] in call.args for call in mock_check_call.call_args_list)

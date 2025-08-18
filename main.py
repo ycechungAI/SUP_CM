@@ -7,10 +7,16 @@ import os
 import urllib.request
 import shutil
 
-DEFAULT_PROGRAMS = {
+BASIC_PROGRAMS = {
     "linux": ["vlc", "docker.io", "git", "code"],
     "darwin": ["vlc", "docker", "git", "visual-studio-code", "google-chrome"],
     "windows": ["vlc", "docker-desktop", "git", "vscode", "googlechrome"]
+}
+
+DEVELOPER_PROGRAMS = {
+    "linux": ["git", "docker.io", "code", "postman", "dbeaver-ce", "libreoffice", "evince", "slack", "vlc", "gimp", "spotify-client"],
+    "darwin": ["git", "docker", "visual-studio-code", "postman", "dbeaver-community", "libreoffice", "adobe-acrobat-reader", "slack", "vlc", "gimp", "spotify"],
+    "windows": ["git", "docker-desktop", "vscode", "postman", "dbeaver", "libreoffice", "adobereader", "slack", "vlc", "gimp", "spotify"]
 }
 
 def check_pip():
@@ -154,18 +160,21 @@ def get_program_list(os_name):
     while True:
         choice = input(
             "Choose an option:\n"
-            "a. Install a default list of applications (VLC, Docker, etc.)\n"
-            "b. Enter a custom list of programs\n"
+            "a. Install a basic list of applications.\n"
+            "b. Install a full developer list of applications.\n"
+            "c. Enter a custom list of programs.\n"
             "Your choice: "
         ).lower()
 
         if choice == 'a':
-            return DEFAULT_PROGRAMS.get(os_name, [])
+            return BASIC_PROGRAMS.get(os_name, [])
         elif choice == 'b':
+            return DEVELOPER_PROGRAMS.get(os_name, [])
+        elif choice == 'c':
             programs_input = input("Enter the list of programs to install, separated by commas: ").strip()
             return [p.strip() for p in programs_input.split(',') if p.strip()]
         else:
-            print("Invalid choice. Please enter 'a' or 'b'.")
+            print("Invalid choice. Please enter 'a', 'b', or 'c'.")
 
 def main():
     os_name = platform.system().lower()
@@ -328,7 +337,7 @@ def main():
         try:
             print(f"Attempt {attempt + 1}: Checking playbook syntax...")
             output = subprocess.check_output(
-                ['ansible-playbook', playbook_file, '--syntax-check'],
+                ['ansible-playbook', playbook_file, '--syntax-check', '-v'],
                 stderr=subprocess.STDOUT
             ).decode('utf-8')
             print("Syntax check output:")
@@ -353,7 +362,7 @@ def main():
     # Run the playbook
     try:
         print("Running the playbook...")
-        subprocess.check_call(['ansible-playbook', playbook_file])
+        subprocess.check_call(['ansible-playbook', playbook_file, '-v'])
         print("Playbook executed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error running playbook: {e}")
