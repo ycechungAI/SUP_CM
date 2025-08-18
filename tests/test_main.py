@@ -49,6 +49,28 @@ def test_install_package(mock_check_call):
     main.install_package("my-package")
     mock_check_call.assert_called_once_with([sys.executable, "-m", "pip", "install", "--user", "my-package"])
 
+@patch('subprocess.check_call')
+@patch('sys.prefix', '/usr')
+@patch('sys.base_prefix', '/usr')
+def test_install_package_no_venv(mock_check_call):
+    """
+    Test that install_package uses --user when not in a venv.
+    """
+    main.install_package("my-package")
+    expected_command = [sys.executable, "-m", "pip", "install", "--user", "my-package"]
+    mock_check_call.assert_called_once_with(expected_command)
+
+@patch('subprocess.check_call')
+@patch('sys.prefix', '/app/.venv')
+@patch('sys.base_prefix', '/usr')
+def test_install_package_in_venv(mock_check_call):
+    """
+    Test that install_package does not use --user when in a venv.
+    """
+    main.install_package("my-package")
+    expected_command = [sys.executable, "-m", "pip", "install", "my-package"]
+    mock_check_call.assert_called_once_with(expected_command)
+
 @patch('shutil.which')
 def test_command_exists(mock_which):
     """
