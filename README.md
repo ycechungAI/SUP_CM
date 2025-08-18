@@ -49,24 +49,31 @@ To run the project on your local machine for development purposes, follow these 
     ```
 
 2.  **Set up a virtual environment (Recommended):**
+    macOS
     ```bash
     python3 -m venv .venv
     source .venv/bin/activate
     ```
+    windows
+    ```bash
+    python3 -m venv .venv
+    source .venv\bin\activate
 
-3.  **Install the project in editable mode:**
+    ```
+
+4.  **Install the project in editable mode:**
     This command installs all the dependencies and makes the script available as a command-line tool. The `-e` flag means that any changes you make to the source code will be immediately effective when you run the command.
     ```bash
     pip install -e .
     ```
 
-4.  **Set up your API Key:**
+5.  **Set up your API Key:**
     Create a `.env` file in the project's root directory:
     ```
     OPENAI_API_KEY=your_api_key_here
     ```
 
-5.  **Run the program:**
+6.  **Run the program:**
     Now you can run the program using the command:
     ```bash
     program-installer
