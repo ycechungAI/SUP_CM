@@ -132,7 +132,7 @@ def test_generate_playbook_with_error():
 @patch('main.install_package')
 @patch('dotenv.load_dotenv')
 @patch('openai.OpenAI')
-@patch('builtins.input', return_value='vim, git')
+@patch('builtins.input', side_effect=['b', 'vim, git'])
 @patch('main.command_exists')
 @patch('main.install_homebrew')
 @patch('subprocess.check_call')
@@ -165,7 +165,7 @@ def test_main_macos(
     assert mock_install_package.call_count == 2
     mock_load_dotenv.assert_called_once()
     mock_openai.assert_called_once()
-    mock_input.assert_called_once()
+    assert mock_input.call_count == 2
     assert mock_command_exists.call_count == 4
     mock_install_homebrew.assert_called_once()
 

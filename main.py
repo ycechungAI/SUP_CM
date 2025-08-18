@@ -7,6 +7,12 @@ import os
 import urllib.request
 import shutil
 
+DEFAULT_PROGRAMS = {
+    "linux": ["vlc", "docker.io", "git", "code"],
+    "darwin": ["vlc", "docker", "git", "visual-studio-code", "google-chrome"],
+    "windows": ["vlc", "docker-desktop", "git", "vscode", "googlechrome"]
+}
+
 def check_pip():
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "--version"])
@@ -120,6 +126,23 @@ def ensure_ansible_installed():
         sys.exit(1)
     print("Ansible installed successfully.")
 
+def get_program_list(os_name):
+    while True:
+        choice = input(
+            "Choose an option:\n"
+            "a. Install a default list of applications (VLC, Docker, etc.)\n"
+            "b. Enter a custom list of programs\n"
+            "Your choice: "
+        ).lower()
+
+        if choice == 'a':
+            return DEFAULT_PROGRAMS.get(os_name, [])
+        elif choice == 'b':
+            programs_input = input("Enter the list of programs to install, separated by commas: ").strip()
+            return [p.strip() for p in programs_input.split(',') if p.strip()]
+        else:
+            print("Invalid choice. Please enter 'a' or 'b'.")
+
 def main():
     os_name = platform.system().lower()
 
@@ -155,8 +178,7 @@ def main():
         print("Ansible does not support Windows as a control machine natively.")
         print("Skipping Ansible installation. Proceeding with program installation if applicable.")
 
-    programs_input = input("Enter the list of programs to install, separated by commas: ").strip()
-    programs = [p.strip() for p in programs_input.split(',') if p.strip()]
+    programs = get_program_list(os_name)
 
     if not programs:
         print("No programs specified.")
