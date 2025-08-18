@@ -26,30 +26,45 @@ Why do we need? We have billions of new devices going to be added around the wor
 
 ## Installation
 
+There are two ways to install AES_CM: from PyPI or from the source.
+
+### From PyPI (Recommended)
+
+1.  **Install the package:**
+    ```bash
+    pip install aes-cm
+    ```
+
+### From Source (for development)
+
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/sup_cm.git
-    cd sup_cm
+    git clone https://github.com/ycechung-cm/your_repository.git
+    cd your_repository
     ```
 
-2.  **Create a `.env` file:**
-    Create a `.env` file in the root of the project and add your OpenAI API key:
-    ```
-    OPENAI_API_KEY=your_api_key_here
-    ```
-
-3.  **Install Python dependencies:**
-    The script will automatically install the required Python packages when you run it for the first time. Alternatively, you can install them manually:
+2.  **Install in editable mode:**
+    This will install the package and its dependencies. The `-e` flag allows you to edit the code and have the changes apply immediately.
     ```bash
-    pip install -r requirements.txt
+    pip install -e .
     ```
+
+## Configuration
+
+Before running the program, you need to set up your OpenAI API key. Create a `.env` file in the directory where you will run the command:
+
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+The program will automatically find and use this `.env` file.
 
 ## Usage
 
-To run the script, execute the `main.py` file from your terminal:
+Once installed, you can run the program from your terminal using the `program-installer` command:
 
 ```bash
-python3 main.py
+program-installer
 ```
 
 The script will guide you through the process:
