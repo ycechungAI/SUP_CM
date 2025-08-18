@@ -2,6 +2,8 @@
 
 AES_CM (Auto Env Setup CM) is a powerful tool that automates the setup of a development environment on macOS, Linux, and Windows. It uses a combination of native package managers and Ansible to install and configure software, and leverages the OpenAI API to generate Ansible playbooks tailored to your needs.
 
+Why do we need? We have billions of new devices going to be added around the world, whether you are running any type of computer operating system, smart phone or ASIC devices.  It may require initial setup for developers and geeks alike.  Hence there is the issue we all have faced when installing or doing the boring setup on a fresh OS install.  Meet AES_CM the world's automated setup tool where you just buy the system and setup on single command.
+
 ## Features
 
 - **Cross-Platform Support**: Works on macOS, Linux, and Windows.
