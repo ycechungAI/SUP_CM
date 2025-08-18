@@ -106,8 +106,7 @@ def test_generate_playbook():
     assert "Create an Ansible playbook YAML for macOS" in prompt
     assert "vim, git" in prompt
     assert "ignore_errors: true" in prompt
-    assert "Here is an example of a playbook structure to follow" in prompt
-    assert template in prompt
+    assert template not in prompt
 
 def test_generate_playbook_with_error():
     """
