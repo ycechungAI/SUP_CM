@@ -77,11 +77,26 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
         prompt += "Give me just the complete YAML code and no other text as response to this."
 
     from openai import OpenAI
-    response = client.chat.completions.create(
-        model="openai/gpt-5-nano-2025-08-07",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+    import time
+
+    max_retries = 3
+    for i in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="openai/gpt-5-nano-2025-08-07",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            content = response.choices[0].message.content
+            if content and content.strip():
+                return content
+            else:
+                print(f"Warning: API returned empty content. Retrying ({i+1}/{max_retries})...")
+                time.sleep(2)  # Wait for 2 seconds before retrying
+        except Exception as e:
+            print(f"An error occurred while calling the API: {e}. Retrying ({i+1}/{max_retries})...")
+            time.sleep(2)
+
+    return None
 
 def advise_path_update():
     local_bins = [os.path.expanduser("~/.local/bin"), os.path.expanduser("~/Library/Python/3.13/bin")]
@@ -286,6 +301,10 @@ def main():
 
     print("Generating Ansible playbook...")
     playbook_content = generate_playbook(client, os_name, programs, template=playbook_content_template)
+
+    if not playbook_content or not playbook_content.strip():
+        print("Error: Generated playbook content is empty. Aborting.")
+        return
 
     playbook_file = 'ansible_playbook.yml'
     with open(playbook_file, 'w') as f:
