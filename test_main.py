@@ -126,6 +126,44 @@ def test_generate_playbook_with_error():
     assert "vim, git" in prompt
     assert "ignore_errors: true" in prompt
 
+@patch('time.sleep', return_value=None)
+def test_generate_playbook_with_retry(mock_sleep):
+    """
+    Test that generate_playbook retries on empty content and eventually succeeds.
+    """
+    mock_client = MagicMock()
+    mock_response_empty = MagicMock()
+    mock_response_empty.choices[0].message.content = ""
+    mock_response_success = MagicMock()
+    mock_response_success.choices[0].message.content = "playbook_content"
+
+    mock_client.chat.completions.create.side_effect = [
+        mock_response_empty,
+        mock_response_empty,
+        mock_response_success
+    ]
+
+    result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
+    assert result == "playbook_content"
+    assert mock_client.chat.completions.create.call_count == 3
+    assert mock_sleep.call_count == 2
+
+@patch('time.sleep', return_value=None)
+def test_generate_playbook_fails_after_retries(mock_sleep):
+    """
+    Test that generate_playbook returns None after all retries fail.
+    """
+    mock_client = MagicMock()
+    mock_response_empty = MagicMock()
+    mock_response_empty.choices[0].message.content = ""
+
+    mock_client.chat.completions.create.return_value = mock_response_empty
+
+    result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
+    assert result is None
+    assert mock_client.chat.completions.create.call_count == 3
+    assert mock_sleep.call_count == 3
+
 @patch('platform.system', return_value='darwin')
 @patch('main.check_pip', return_value=True)
 @patch('main.install_pip')
