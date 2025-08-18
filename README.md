@@ -49,12 +49,14 @@ To run the project on your local machine for development purposes, follow these 
     ```
 
 2.  **Set up a virtual environment (Recommended):**
-    macOS
+    windows
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
     ```bash
     python3 -m venv .venv
-    source .venv/bin/activate
+    . .\.venv\Scripts\Activate.ps1
     ```
-    windows
+    macOS
     ```bash
     python3 -m venv .venv
     source .venv\bin\activate
