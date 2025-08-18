@@ -51,7 +51,7 @@ def install_chocolatey():
     os.environ["Path"] += os.pathsep + "C:\\ProgramData\\chocolatey\\bin"
     print("Chocolatey installed.")
 
-def generate_playbook(client, os_name, programs, error=None, previous_content=None):
+def generate_playbook(client, os_name, programs, template=None, error=None, previous_content=None):
     if error:
         prompt = (
             f"Fix this Ansible playbook YAML for {os_name} environment based on the following error: {error}\n"
@@ -65,8 +65,12 @@ def generate_playbook(client, os_name, programs, error=None, previous_content=No
             f"Create an Ansible playbook YAML for {os_name} environment in order to install development environment "
             f"and user required programs: {', '.join(programs)}. "
             f"For each program installation task, add 'ignore_errors: true' to prevent failures if the program is already installed. "
-            f"Give me just the complete YAML code and no other text as response to this."
         )
+        if template:
+            prompt += f"\nHere is an example of a playbook structure to follow:\n{template}\n"
+        prompt += "Give me just the complete YAML code and no other text as response to this."
+
+    from openai import OpenAI
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}]
@@ -211,8 +215,7 @@ def main():
         print("Cannot generate and run Ansible playbook on Windows.")
         return
 
-    # Generate initial playbook
-    playbook_content = """---
+    playbook_content_template = """---
 - name: Setup macOS Development Environment
   hosts: localhost
   connection: local
@@ -228,42 +231,15 @@ def main():
         name: python
         state: present
 
-    - name: Install VLC
+    - name: Install a program (example)
       homebrew_cask:
-        name: vlc
-        state: present
-      ignore_errors: true
-
-    - name: Install DuckDuckGo
-      homebrew_cask:
-        name: duckduckgo
-        state: present
-      ignore_errors: true
-
-    - name: Install Zoom
-      homebrew_cask:
-        name: zoom
-        state: present
-      ignore_errors: true
-
-    - name: Install UTM
-      homebrew_cask:
-        name: utm
-        state: present
-      ignore_errors: true
-
-    - name: Install Docker
-      homebrew_cask:
-        name: docker
-        state: present
-      ignore_errors: true
-
-    - name: Install LM Studio
-      homebrew_cask:
-        name: lm-studio
+        name: example-program
         state: present
       ignore_errors: true
 """
+
+    print("Generating Ansible playbook...")
+    playbook_content = generate_playbook(client, os_name, programs, template=playbook_content_template)
 
     playbook_file = 'ansible_playbook.yml'
     with open(playbook_file, 'w') as f:

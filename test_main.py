@@ -97,14 +97,17 @@ def test_generate_playbook():
     """
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value.choices[0].message.content = "playbook_content"
+    template = "playbook_template"
 
-    result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
+    result = main.generate_playbook(mock_client, "macOS", ["vim", "git"], template=template)
     assert result == "playbook_content"
     mock_client.chat.completions.create.assert_called_once()
     prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
     assert "Create an Ansible playbook YAML for macOS" in prompt
     assert "vim, git" in prompt
     assert "ignore_errors: true" in prompt
+    assert "Here is an example of a playbook structure to follow" in prompt
+    assert template in prompt
 
 def test_generate_playbook_with_error():
     """
@@ -136,8 +139,9 @@ def test_generate_playbook_with_error():
 @patch('subprocess.check_output', return_value=b'Syntax check passed')
 @patch('builtins.open', new_callable=mock_open)
 @patch('main.advise_path_update')
+@patch('main.generate_playbook', return_value='generated_playbook_content')
 def test_main_macos(
-    mock_advise, mock_open_file, mock_check_output, mock_check_call,
+    mock_generate_playbook, mock_advise, mock_open_file, mock_check_output, mock_check_call,
     mock_install_homebrew, mock_command_exists, mock_input, mock_openai,
     mock_load_dotenv, mock_install_package, mock_install_pip, mock_check_pip, mock_system
 ):
@@ -172,12 +176,9 @@ def test_main_macos(
     assert any(['brew', 'install', 'vim', 'git'] in call.args for call in mock_check_call.call_args_list)
 
     # Check playbook generation and execution
+    mock_generate_playbook.assert_called_once()
     mock_open_file.assert_called_with('ansible_playbook.yml', 'w')
-
-    # Get the content written to the file
-    written_content = mock_open_file().write.call_args[0][0]
-    assert 'ignore_errors: true' in written_content
-
+    mock_open_file().write.assert_called_once_with('generated_playbook_content')
     mock_check_output.assert_called_with(
         ['ansible-playbook', 'ansible_playbook.yml', '--syntax-check'],
         stderr=subprocess.STDOUT
