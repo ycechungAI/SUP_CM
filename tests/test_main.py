@@ -98,9 +98,10 @@ def test_install_homebrew(mock_check_call):
     install_cmd = '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
     mock_check_call.assert_called_once_with(install_cmd, shell=True)
 
+@patch('os.path.isdir', return_value=False)
 @patch('subprocess.check_call')
 @patch.dict(os.environ, {'Path': ''}, clear=True)
-def test_install_chocolatey(mock_check_call):
+def test_install_chocolatey(mock_check_call, mock_isdir):
     """
     Test that install_chocolatey runs the Chocolatey installation script.
     """
@@ -112,6 +113,24 @@ def test_install_chocolatey(mock_check_call):
         "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
     )
     mock_check_call.assert_called_once_with(["powershell.exe", "-Command", install_cmd])
+
+@patch('subprocess.check_call')
+@patch('os.path.isdir', return_value=True)
+@patch('sys.exit')
+@patch.dict(os.environ, {'Path': ''}, clear=True)
+def test_install_chocolatey_already_exists(mock_exit, mock_isdir, mock_check_call, capsys):
+    """
+    Test that install_chocolatey exits if the choco directory already exists.
+    """
+    mock_exit.side_effect = SystemExit(1)
+    with pytest.raises(SystemExit) as e:
+        main.install_chocolatey()
+
+    assert e.value.code == 1
+    mock_isdir.assert_called_once()
+    mock_check_call.assert_not_called()
+    captured = capsys.readouterr()
+    assert "Warning: An existing Chocolatey directory was found." in captured.out
 
 def test_generate_playbook():
     """
