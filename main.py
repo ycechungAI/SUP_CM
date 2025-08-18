@@ -72,14 +72,12 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
             f"and user required programs: {', '.join(programs)}. "
             f"For each program installation task, add 'ignore_errors: true' to prevent failures if the program is already installed. "
         )
-        if template:
-            prompt += f"\nHere is an example of a playbook structure to follow:\n{template}\n"
         prompt += "Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
 
     from openai import OpenAI
     import time
 
-    models_to_try = ["openai/gpt-4o-mini", "openai/gpt-5-2025-08-07"]
+    models_to_try = ["gpt-4o-mini", "gpt-5-2025-08-07"]
     max_retries_per_model = 3
     initial_sleep_duration = 7  # seconds
     increment = 5  # seconds
