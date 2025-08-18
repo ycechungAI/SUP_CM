@@ -23,6 +23,7 @@ Why do we need? We have billions of new devices going to be added around the wor
 
 - Python 3.5+
 - An OpenAI API key
+- Git
 
 ## Installation
 
