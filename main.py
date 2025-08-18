@@ -79,23 +79,29 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
     from openai import OpenAI
     import time
 
-    max_retries = 3
-    for i in range(max_retries):
-        try:
-            response = client.chat.completions.create(
-                model="openai/gpt-5-nano-2025-08-07",
-                messages=[{"role": "user", "content": prompt}]
-            )
-            content = response.choices[0].message.content
-            if content and content.strip():
-                return content
-            else:
-                print(f"Warning: API returned empty content. Retrying ({i+1}/{max_retries})...")
-                time.sleep(2)  # Wait for 2 seconds before retrying
-        except Exception as e:
-            print(f"An error occurred while calling the API: {e}. Retrying ({i+1}/{max_retries})...")
-            time.sleep(2)
+    models_to_try = ["openai/gpt-5-2025-08-07", "openai/gpt-4o-mini"]
+    max_retries_per_model = 3
 
+    for model in models_to_try:
+        print(f"Attempting to generate playbook with model: {model}")
+        for i in range(max_retries_per_model):
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                content = response.choices[0].message.content
+                if content and content.strip():
+                    print(f"Successfully generated playbook with model: {model}")
+                    return content
+                else:
+                    print(f"Warning: Model {model} returned empty content. Retrying ({i+1}/{max_retries_per_model})...")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"An error occurred with model {model}: {e}. Retrying ({i+1}/{max_retries_per_model})...")
+                time.sleep(2)
+
+    print("Failed to generate playbook with all models after multiple retries.")
     return None
 
 def advise_path_update():

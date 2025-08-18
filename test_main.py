@@ -127,9 +127,9 @@ def test_generate_playbook_with_error():
     assert "ignore_errors: true" in prompt
 
 @patch('time.sleep', return_value=None)
-def test_generate_playbook_with_retry(mock_sleep):
+def test_generate_playbook_fallback_succeeds(mock_sleep):
     """
-    Test that generate_playbook retries on empty content and eventually succeeds.
+    Test that generate_playbook falls back to the second model and succeeds.
     """
     mock_client = MagicMock()
     mock_response_empty = MagicMock()
@@ -137,7 +137,9 @@ def test_generate_playbook_with_retry(mock_sleep):
     mock_response_success = MagicMock()
     mock_response_success.choices[0].message.content = "playbook_content"
 
+    # Fail 3 times with the first model, then succeed with the second model.
     mock_client.chat.completions.create.side_effect = [
+        mock_response_empty,
         mock_response_empty,
         mock_response_empty,
         mock_response_success
@@ -145,24 +147,25 @@ def test_generate_playbook_with_retry(mock_sleep):
 
     result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
     assert result == "playbook_content"
-    assert mock_client.chat.completions.create.call_count == 3
-    assert mock_sleep.call_count == 2
+    assert mock_client.chat.completions.create.call_count == 4
+    assert mock_sleep.call_count == 3 # 3 failures for the first model
 
 @patch('time.sleep', return_value=None)
-def test_generate_playbook_fails_after_retries(mock_sleep):
+def test_generate_playbook_fallback_fails(mock_sleep):
     """
-    Test that generate_playbook returns None after all retries fail.
+    Test that generate_playbook returns None after all models and retries fail.
     """
     mock_client = MagicMock()
     mock_response_empty = MagicMock()
     mock_response_empty.choices[0].message.content = ""
 
-    mock_client.chat.completions.create.return_value = mock_response_empty
+    # Fail 3 times for each of the 2 models.
+    mock_client.chat.completions.create.side_effect = [mock_response_empty] * 6
 
     result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
     assert result is None
-    assert mock_client.chat.completions.create.call_count == 3
-    assert mock_sleep.call_count == 3
+    assert mock_client.chat.completions.create.call_count == 6
+    assert mock_sleep.call_count == 6
 
 @patch('platform.system', return_value='darwin')
 @patch('main.check_pip', return_value=True)
