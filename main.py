@@ -6,8 +6,6 @@ import platform
 import os
 import urllib.request
 import shutil
-from dotenv import load_dotenv
-from openai import OpenAI
 
 def check_pip():
     try:
@@ -59,12 +57,15 @@ def generate_playbook(client, os_name, programs, error=None, previous_content=No
             f"Fix this Ansible playbook YAML for {os_name} environment based on the following error: {error}\n"
             f"Previous playbook:\n{previous_content}\n"
             f"The playbook should install a development environment and the user-required programs: {', '.join(programs)}. "
+            f"For each program installation task, make sure to add 'ignore_errors: true' to prevent failures if the program is already installed. "
             f"Give me just the complete YAML code and no other text as response to this."
         )
     else:
         prompt = (
             f"Create an Ansible playbook YAML for {os_name} environment in order to install development environment "
-            f"and user required programs: {', '.join(programs)}. Give me just the complete YAML code and no other text as response to this."
+            f"and user required programs: {', '.join(programs)}. "
+            f"For each program installation task, add 'ignore_errors: true' to prevent failures if the program is already installed. "
+            f"Give me just the complete YAML code and no other text as response to this."
         )
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -127,6 +128,9 @@ def main():
 
     install_package("python-dotenv")
     install_package("openai")
+
+    from dotenv import load_dotenv
+    from openai import OpenAI
 
     load_dotenv()
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -228,31 +232,37 @@ def main():
       homebrew_cask:
         name: vlc
         state: present
+      ignore_errors: true
 
     - name: Install DuckDuckGo
       homebrew_cask:
         name: duckduckgo
         state: present
+      ignore_errors: true
 
     - name: Install Zoom
       homebrew_cask:
         name: zoom
         state: present
+      ignore_errors: true
 
     - name: Install UTM
       homebrew_cask:
         name: utm
         state: present
+      ignore_errors: true
 
     - name: Install Docker
       homebrew_cask:
         name: docker
         state: present
+      ignore_errors: true
 
     - name: Install LM Studio
       homebrew_cask:
         name: lm-studio
         state: present
+      ignore_errors: true
 """
 
     playbook_file = 'ansible_playbook.yml'
@@ -301,5 +311,4 @@ def main():
         print(f"Unexpected error running playbook: {e}")
 
 if __name__ == "__main__":
-    load_dotenv()
     main()

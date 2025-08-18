@@ -62,13 +62,15 @@ The script will guide you through the process:
 This project includes a comprehensive test suite using `pytest`. To run the tests, follow these steps:
 
 1.  **Install testing dependencies:**
+    On some systems, you may need to use `pip3` instead of `pip`.
     ```bash
-    pip install -r requirements.txt
+    pip3 install -r requirements.txt
     ```
 
 2.  **Run the tests:**
+    On some systems, you may need to use `python3` to run pytest as a module.
     ```bash
-    pytest
+    python3 -m pytest
     ```
 
 ## License

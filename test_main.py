@@ -91,13 +91,11 @@ def test_install_chocolatey(mock_check_call):
     )
     mock_check_call.assert_called_once_with(["powershell.exe", "-Command", install_cmd])
 
-@patch('main.OpenAI')
-def test_generate_playbook(mock_openai):
+def test_generate_playbook():
     """
     Test that generate_playbook calls the OpenAI API with the correct prompt.
     """
     mock_client = MagicMock()
-    mock_openai.return_value = mock_client
     mock_client.chat.completions.create.return_value.choices[0].message.content = "playbook_content"
 
     result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
@@ -106,14 +104,13 @@ def test_generate_playbook(mock_openai):
     prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
     assert "Create an Ansible playbook YAML for macOS" in prompt
     assert "vim, git" in prompt
+    assert "ignore_errors: true" in prompt
 
-@patch('main.OpenAI')
-def test_generate_playbook_with_error(mock_openai):
+def test_generate_playbook_with_error():
     """
     Test that generate_playbook calls the OpenAI API with a prompt to fix an error.
     """
     mock_client = MagicMock()
-    mock_openai.return_value = mock_client
     mock_client.chat.completions.create.return_value.choices[0].message.content = "fixed_playbook_content"
 
     result = main.generate_playbook(mock_client, "macOS", ["vim", "git"], error="some error", previous_content="previous_content")
@@ -124,13 +121,14 @@ def test_generate_playbook_with_error(mock_openai):
     assert "some error" in prompt
     assert "previous_content" in prompt
     assert "vim, git" in prompt
+    assert "ignore_errors: true" in prompt
 
 @patch('platform.system', return_value='darwin')
 @patch('main.check_pip', return_value=True)
 @patch('main.install_pip')
 @patch('main.install_package')
-@patch('main.load_dotenv')
-@patch('main.OpenAI')
+@patch('dotenv.load_dotenv')
+@patch('openai.OpenAI')
 @patch('builtins.input', return_value='vim, git')
 @patch('main.command_exists')
 @patch('main.install_homebrew')
@@ -175,6 +173,11 @@ def test_main_macos(
 
     # Check playbook generation and execution
     mock_open_file.assert_called_with('ansible_playbook.yml', 'w')
+
+    # Get the content written to the file
+    written_content = mock_open_file().write.call_args[0][0]
+    assert 'ignore_errors: true' in written_content
+
     mock_check_output.assert_called_with(
         ['ansible-playbook', 'ansible_playbook.yml', '--syntax-check'],
         stderr=subprocess.STDOUT
