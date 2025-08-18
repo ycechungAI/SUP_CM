@@ -39,7 +39,12 @@ def install_pip():
 
 def install_package(package):
     print(f"Installing {package}...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", package])
+    command = [sys.executable, "-m", "pip", "install", package]
+    # If not in a virtual environment, install to user site-packages
+    if sys.prefix == sys.base_prefix:
+        command.insert(4, "--user")
+
+    subprocess.check_call(command)
     print(f"{package} installed successfully.")
 
 def command_exists(cmd):
