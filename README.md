@@ -66,7 +66,7 @@ To run the project on your local machine for development purposes, follow these 
 4.  **Install the project in editable mode:**
     This command installs all the dependencies and makes the script available as a command-line tool. The `-e` flag means that any changes you make to the source code will be immediately effective when you run the command.
     ```bash
-    pip install -e .
+    pip3 install -e .
     ```
 
 5.  **Set up your API Key:**
