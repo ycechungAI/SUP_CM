@@ -72,7 +72,7 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
 
     from openai import OpenAI
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="openai/gpt-5-nano-2025-08-07",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
