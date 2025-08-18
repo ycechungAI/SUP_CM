@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock, mock_open, call
 import main
 import sys
 import subprocess
@@ -148,7 +148,8 @@ def test_generate_playbook_fallback_succeeds(mock_sleep):
     result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
     assert result == "playbook_content"
     assert mock_client.chat.completions.create.call_count == 4
-    assert mock_sleep.call_count == 3 # 3 failures for the first model
+    mock_sleep.assert_has_calls([call(7), call(12), call(17)])
+    assert mock_sleep.call_count == 3
 
 @patch('time.sleep', return_value=None)
 def test_generate_playbook_fallback_fails(mock_sleep):
@@ -165,6 +166,10 @@ def test_generate_playbook_fallback_fails(mock_sleep):
     result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
     assert result is None
     assert mock_client.chat.completions.create.call_count == 6
+    mock_sleep.assert_has_calls([
+        call(7), call(12), call(17), # First model failures
+        call(7), call(12), call(17)  # Second model failures
+    ])
     assert mock_sleep.call_count == 6
 
 @patch('platform.system', return_value='darwin')

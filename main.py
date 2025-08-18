@@ -64,7 +64,7 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
             f"Previous playbook:\n{previous_content}\n"
             f"The playbook should install a development environment and the user-required programs: {', '.join(programs)}. "
             f"For each program installation task, make sure to add 'ignore_errors: true' to prevent failures if the program is already installed. "
-            f"Give me just the complete YAML code and no other text as response to this."
+            f"Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
         )
     else:
         prompt = (
@@ -74,15 +74,18 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
         )
         if template:
             prompt += f"\nHere is an example of a playbook structure to follow:\n{template}\n"
-        prompt += "Give me just the complete YAML code and no other text as response to this."
+        prompt += "Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
 
     from openai import OpenAI
     import time
 
-    models_to_try = ["openai/gpt-5-2025-08-07", "openai/gpt-4o-mini"]
+    models_to_try = ["openai/gpt-4o-mini", "openai/gpt-5-2025-08-07"]
     max_retries_per_model = 3
+    initial_sleep_duration = 7  # seconds
+    increment = 5  # seconds
 
     for model in models_to_try:
+        sleep_duration = initial_sleep_duration
         print(f"Attempting to generate playbook with model: {model}")
         for i in range(max_retries_per_model):
             try:
@@ -95,11 +98,13 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
                     print(f"Successfully generated playbook with model: {model}")
                     return content
                 else:
-                    print(f"Warning: Model {model} returned empty content. Retrying ({i+1}/{max_retries_per_model})...")
-                    time.sleep(2)
+                    print(f"Warning: Model {model} returned empty content. Retrying after {sleep_duration} seconds...")
+                    time.sleep(sleep_duration)
+                    sleep_duration += increment
             except Exception as e:
-                print(f"An error occurred with model {model}: {e}. Retrying ({i+1}/{max_retries_per_model})...")
-                time.sleep(2)
+                print(f"An error occurred with model {model}: {e}. Retrying after {sleep_duration} seconds...")
+                time.sleep(sleep_duration)
+                sleep_duration += increment
 
     print("Failed to generate playbook with all models after multiple retries.")
     return None
