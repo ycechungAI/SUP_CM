@@ -85,7 +85,7 @@ def install_chocolatey():
     os.environ["Path"] += os.pathsep + os.path.join(choco_path, "bin")
     print("Chocolatey installed.")
 
-def generate_playbook(client, programs, template=None, error=None, previous_content=None):
+def generate_playbook(client, programs, error=None, previous_content=None):
     if error:
         prompt = (
             f"Fix this universal Ansible playbook YAML based on the following error: {error}\n"
@@ -317,69 +317,9 @@ def main():
         print("Cannot generate and run Ansible playbook on Windows.")
         return
 
-    playbook_content_template = """---
-- name: Setup macOS Development Environment
-  hosts: localhost
-  connection: local
-  gather_facts: false
-
-  tasks:
-    - name: Ensure Homebrew is installed
-      homebrew:
-        state: present
-
-    - name: Install Python
-      homebrew:
-        name: python
-        state: present
-
-    - name: Install VLC
-      homebrew_cask:
-        name: vlc
-        state: present
-
-    - name: Install DuckDuckGo
-      homebrew_cask:
-        name: duckduckgo
-        state: present
-
-    - name: Install Zoom
-      homebrew_cask:
-        name: zoom
-        state: present
-
-    - name: Install UTM
-      homebrew_cask:
-        name: utm
-        state: present
-
-    - name: Install Docker
-      homebrew_cask:
-        name: docker
-        state: present
-
-    - name: Install LM Studio
-      homebrew_cask:
-        name: lm-studio
-        state: present
-"""
-
     print("Generating Ansible playbook...")
 
-    # Determine which template to use
-    if choice == 'b':
-        template_path = 'template-full.yml'
-    else:
-        template_path = 'ansible_playbook_template.yml'
-
-    try:
-        with open(template_path, 'r') as f:
-            playbook_content_template = f.read()
-    except FileNotFoundError:
-        print(f"Warning: Template file not found at {template_path}. Proceeding without a template.")
-        playbook_content_template = None
-
-    playbook_content = generate_playbook(client, programs, template=playbook_content_template)
+    playbook_content = generate_playbook(client, programs)
 
     if not playbook_content or not playbook_content.strip():
         print("Error: Generated playbook content is empty. Aborting.")
