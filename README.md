@@ -21,10 +21,10 @@ Why do we need? We have billions of new devices going to be added around the wor
 
 ## Prerequisites
 
-- Python 3.5+
+- Python 3.8+
     - Tips for windows install python from Microsoft Store or dont forget to include it in your path
     - For Mac use homebrew
-- An OpenAI API key
+- An OpenAI / OpenRouter API key
 - Git
 
 ## Installation
@@ -83,6 +83,7 @@ To run the project on your local machine for development purposes, follow these 
     Create a `.env` file in the project's root directory:
     ```
     OPENAI_API_KEY=your_api_key_here
+    OPENROUTER_API_KEY=your_api_key_here_2
     ```
 
 6.  **Run the program:**

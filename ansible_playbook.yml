@@ -1,45 +1,70 @@
 ---
-- name: Setup macOS Development Environment
+- name: Install applications on macOS
   hosts: localhost
   connection: local
-  gather_facts: false
-
   tasks:
-    - name: Ensure Homebrew is installed
+    - name: Install adobe-reader
       homebrew:
+        name: adobe-reader
         state: present
+      ignore_errors: true
 
-    - name: Install Python
+    - name: Install dbeaver
       homebrew:
-        name: python
+        name: dbeaver-community
         state: present
+      ignore_errors: true
 
-    - name: Install VLC
-      homebrew_cask:
-        name: vlc
-        state: present
-
-    - name: Install DuckDuckGo
-      homebrew_cask:
-        name: duckduckgo
-        state: present
-
-    - name: Install Zoom
-      homebrew_cask:
-        name: zoom
-        state: present
-
-    - name: Install UTM
-      homebrew_cask:
-        name: utm
-        state: present
-
-    - name: Install Docker
-      homebrew_cask:
+    - name: Install docker
+      homebrew:
         name: docker
         state: present
+      ignore_errors: true
 
-    - name: Install LM Studio
-      homebrew_cask:
-        name: lm-studio
+    - name: Install gimp
+      homebrew:
+        name: gimp
         state: present
+      ignore_errors: true
+
+    - name: Install git
+      homebrew:
+        name: git
+        state: present
+      ignore_errors: true
+
+    - name: Install libreoffice
+      homebrew:
+        name: libreoffice
+        state: present
+      ignore_errors: true
+
+    - name: Install postman
+      homebrew:
+        name: postman
+        state: present
+      ignore_errors: true
+
+    - name: Install slack
+      homebrew:
+        name: slack
+        state: present
+      ignore_errors: true
+
+    - name: Install spotify
+      homebrew:
+        name: spotify
+        state: present
+      ignore_errors: true
+
+    - name: Install vlc
+      homebrew:
+        name: vlc
+        state: present
+      ignore_errors: true
+
+    - name: Install vscode
+      homebrew:
+        name: visual-studio-code
+        state: present
+      ignore_errors: true
