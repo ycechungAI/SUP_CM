@@ -380,6 +380,61 @@ def test_ensure_ansible_installed_linux(mock_advise, mock_run_pip, mock_exists, 
     mock_advise.assert_called_once()
 
 @patch('platform.system', return_value='darwin')
+@patch('program_installer.main.check_pip', return_value=True)
+@patch('program_installer.main.install_package')
+@patch('dotenv.load_dotenv')
+@patch('openai.OpenAI')
+@patch('builtins.input', return_value='b')
+@patch('program_installer.main.command_exists', return_value=True)
+@patch('subprocess.check_call')
+@patch('subprocess.check_output')
+@patch('builtins.open', new_callable=mock_open)
+@patch('program_installer.main.generate_playbook')
+def test_main_syntax_error_stripping(
+    mock_generate_playbook, mock_open_file, mock_check_output, mock_check_call,
+    mock_command_exists, mock_input, mock_openai, mock_load_dotenv,
+    mock_install_package, mock_check_pip, mock_system
+):
+    """
+    Test that the main function can handle a syntax error by stripping yaml fences.
+    """
+    os.environ['OPENAI_API_KEY'] = 'test_key'
+
+    # Original playbook with fences
+    playbook_with_fences = "```yaml\n---\n- hosts: all\n```"
+    # Corrected playbook
+    playbook_without_fences = "---\n- hosts: all"
+
+    mock_generate_playbook.return_value = playbook_with_fences
+
+    # First syntax check fails, second one passes
+    mock_check_output.side_effect = [
+        subprocess.CalledProcessError(1, 'cmd', output=b'Syntax error'),
+        b'Syntax check passed'
+    ]
+
+    # Mock template reading
+    with patch('builtins.open', mock_open(read_data='template content')) as mock_file:
+        main.main()
+
+        # Check that playbook was generated once
+        mock_generate_playbook.assert_called_once()
+
+        # Check that the file was written to twice: once with fences, once without
+        mock_file.assert_any_call('ansible_playbook.yml', 'w')
+        assert mock_file().write.call_count == 2
+        mock_file().write.assert_has_calls([
+            call(playbook_with_fences),
+            call(playbook_without_fences)
+        ], any_order=False) # The order is important here
+
+        # Check that syntax check was called twice
+        assert mock_check_output.call_count == 2
+
+        # Check that playbook was run
+        mock_check_call.assert_any_call(['ansible-playbook', 'ansible_playbook.yml', '-v'])
+
+@patch('platform.system', return_value='darwin')
 @patch('program_installer.main.command_exists', return_value=False)
 @patch('subprocess.check_call')
 @patch('program_installer.main._run_pip_install')

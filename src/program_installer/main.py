@@ -404,6 +404,14 @@ def main():
             error_msg = e.output.decode('utf-8')
             print("Syntax check failed:")
             print(error_msg)
+            stripped_content = playbook_content.strip()
+            if stripped_content.startswith('```yaml') and stripped_content.endswith('```'):
+                print("Detected YAML code block fences. Removing them and retrying syntax check.")
+                playbook_content = stripped_content.removeprefix('```yaml').removesuffix('```').strip()
+                with open(playbook_file, 'w') as f:
+                    f.write(playbook_content)
+                continue
+
             if attempt < max_attempts - 1:
                 print("Attempting to fix the playbook...")
                 playbook_content = generate_playbook(client, os_name, programs, error=error_msg, previous_content=playbook_content)
