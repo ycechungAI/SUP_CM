@@ -407,7 +407,13 @@ def main():
             stripped_content = playbook_content.strip()
             if stripped_content.startswith('```yaml') and stripped_content.endswith('```'):
                 print("Detected YAML code block fences. Removing them and retrying syntax check.")
-                playbook_content = stripped_content.removeprefix('```yaml').removesuffix('```').strip()
+                # Compatibility for Python < 3.9
+                content = stripped_content
+                if content.startswith('```yaml'):
+                    content = content[len('```yaml'):]
+                if content.endswith('```'):
+                    content = content[:-len('```')]
+                playbook_content = content.strip()
                 with open(playbook_file, 'w') as f:
                     f.write(playbook_content)
                 continue
