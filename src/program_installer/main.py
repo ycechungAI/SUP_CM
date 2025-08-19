@@ -270,23 +270,30 @@ def main():
                 pm = "yum"
             elif command_exists("pacman"):
                 pm = "pacman"
+            elif command_exists("snap"):
+                pm = "snap"
             else:
-                print("No supported package manager found (apt, dnf, yum, pacman).")
+                print("No supported package manager found (apt, dnf, yum, pacman, snap).")
                 return
 
             print(f"Using package manager: {pm}")
 
-            if pm == "apt":
-                subprocess.check_call(["sudo", "apt", "update"])
-                install_cmd = ["sudo", "apt", "install", "-y"] + programs
-            elif pm == "dnf":
-                install_cmd = ["sudo", "dnf", "install", "-y"] + programs
-            elif pm == "yum":
-                install_cmd = ["sudo", "yum", "install", "-y"] + programs
-            elif pm == "pacman":
-                install_cmd = ["sudo", "pacman", "-Syu", "--noconfirm"] + programs
+            if pm == "snap":
+                for program in programs:
+                    subprocess.check_call(["sudo", "snap", "install", program])
+            else:
+                if pm == "apt":
+                    subprocess.check_call(["sudo", "apt", "update"])
+                    install_cmd = ["sudo", "apt", "install", "-y"] + programs
+                elif pm == "dnf":
+                    install_cmd = ["sudo", "dnf", "install", "-y"] + programs
+                elif pm == "yum":
+                    install_cmd = ["sudo", "yum", "install", "-y"] + programs
+                elif pm == "pacman":
+                    install_cmd = ["sudo", "pacman", "-Syu", "--noconfirm"] + programs
 
-            subprocess.check_call(install_cmd)
+                subprocess.check_call(install_cmd)
+
             print("Installation complete.")
 
         elif os_name == "darwin":
