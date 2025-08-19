@@ -193,59 +193,11 @@ def get_program_list(os_name):
 import argparse
 from importlib import metadata
 
-def main():
-    try:
-        version = metadata.version("aes-cm")
-    except metadata.PackageNotFoundError:
-        version = "0.1"  # Fallback for local development
-
-    parser = argparse.ArgumentParser(
-        prog="program-installer",
-        description="A tool to automate the setup of a development environment on macOS, Linux, and Windows."
-    )
-    parser.add_argument(
-        '-v', '--version',
-        action='version',
-        version=f'%(prog)s {version}'
-    )
-    args = parser.parse_args()
-
-    os_name = platform.system().lower()
-
-    if os_name not in ("linux", "darwin", "windows"):
-        print(f"Unsupported operating system: {os_name}")
-        return
-
-    if not check_pip():
-        install_pip()
-
-    install_package("python-dotenv")
-    install_package("openai")
-
-    from dotenv import load_dotenv
-    from openai import OpenAI
-
-    load_dotenv()
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable not set.")
-
-    client = OpenAI(
-        base_url="https://api.aimlapi.com/v1",
-        api_key=api_key,
-    )
-
-    if os_name in ("linux", "darwin"):
-        ensure_ansible_installed()
-        print("\nInstallation complete. You can now use Ansible.")
-        print("Note: Ansible requires Python 3.5+ and may need additional system dependencies like SSH on Linux.")
-        print("For full functionality, ensure you have the necessary prerequisites installed.")
-    else:  # windows
-        print("Ansible does not support Windows as a control machine natively.")
-        print("Skipping Ansible installation. Proceeding with program installation if applicable.")
-
-    choice, programs = get_program_list(os_name)
-
+def install_programs_and_configure(programs, os_name, client, choice):
+    """
+    Installs programs and runs Ansible configuration.
+    This function is designed to be called from both the CLI and GUI.
+    """
     if not programs:
         print("No programs specified.")
         return
@@ -415,6 +367,61 @@ def main():
         print(f"Error running playbook: {e}")
     except Exception as e:
         print(f"Unexpected error running playbook: {e}")
+
+
+def main():
+    try:
+        version = metadata.version("aes-cm")
+    except metadata.PackageNotFoundError:
+        version = "0.1"  # Fallback for local development
+
+    parser = argparse.ArgumentParser(
+        prog="program-installer",
+        description="A tool to automate the setup of a development environment on macOS, Linux, and Windows."
+    )
+    parser.add_argument(
+        '-v', '--version',
+        action='version',
+        version=f'%(prog)s {version}'
+    )
+    args = parser.parse_args()
+
+    os_name = platform.system().lower()
+
+    if os_name not in ("linux", "darwin", "windows"):
+        print(f"Unsupported operating system: {os_name}")
+        return
+
+    if not check_pip():
+        install_pip()
+
+    install_package("python-dotenv")
+    install_package("openai")
+
+    from dotenv import load_dotenv
+    from openai import OpenAI
+
+    load_dotenv()
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable not set.")
+
+    client = OpenAI(
+        base_url="https://api.aimlapi.com/v1",
+        api_key=api_key,
+    )
+
+    if os_name in ("linux", "darwin"):
+        ensure_ansible_installed()
+        print("\nInstallation complete. You can now use Ansible.")
+        print("Note: Ansible requires Python 3.5+ and may need additional system dependencies like SSH on Linux.")
+        print("For full functionality, ensure you have the necessary prerequisites installed.")
+    else:  # windows
+        print("Ansible does not support Windows as a control machine natively.")
+        print("Skipping Ansible installation. Proceeding with program installation if applicable.")
+
+    choice, programs = get_program_list(os_name)
+    install_programs_and_configure(programs, os_name, client, choice)
 
 if __name__ == "__main__":
     main()

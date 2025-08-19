@@ -19,6 +19,7 @@ setup(
     entry_points={
         'console_scripts': [
             'program-installer=program_installer.main:main',
+            'program-installer-gui=program_installer.gui:main',
         ],
     },
     classifiers=[
