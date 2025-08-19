@@ -85,28 +85,49 @@ def install_chocolatey():
     os.environ["Path"] += os.pathsep + os.path.join(choco_path, "bin")
     print("Chocolatey installed.")
 
-def generate_playbook(client, programs, error=None, previous_content=None):
+def generate_playbook(client, programs, is_local=True, error=None, previous_content=None):
+    os_name = platform.system().lower()
     if error:
-        prompt = (
-            f"Fix this universal Ansible playbook YAML based on the following error: {error}\n"
-            f"Previous playbook:\n{previous_content}\n"
-            f"The playbook should be a universal playbook that installs the following programs on multiple OS families (Debian, RedHat, Darwin, Windows) using Ansible facts and 'when' conditions: {', '.join(programs)}. "
-            f"For each program installation task, make sure to add 'ignore_errors: true'. "
-            f"The 'hosts' should be set to 'all'. "
-            f"Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
-        )
+        if is_local:
+            prompt = (
+                f"Fix this Ansible playbook YAML for a local {os_name} environment based on the following error: {error}\n"
+                f"Previous playbook:\n{previous_content}\n"
+                f"The playbook should target `hosts: localhost` with `connection: local` and install the following programs: {', '.join(programs)}. "
+                f"For each program installation task, add 'ignore_errors: true'. "
+                f"Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
+            )
+        else:
+            prompt = (
+                f"Fix this universal Ansible playbook YAML based on the following error: {error}\n"
+                f"Previous playbook:\n{previous_content}\n"
+                f"The playbook should be a universal playbook for `hosts: all` that installs the following programs on multiple OS families (Debian, RedHat, Darwin) using Ansible facts and 'when' conditions: {', '.join(programs)}. "
+                f"For each program installation task, make sure to add 'ignore_errors: true'. "
+                f"Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
+            )
     else:
-        prompt = (
-            "Create a universal Ansible playbook to install a list of required programs on multiple operating systems.\n\n"
-            "The playbook must:\n"
-            "1. Target all hosts in the inventory (`hosts: all`).\n"
-            "2. Gather facts to determine the OS of each host.\n"
-            "3. Use 'when' conditions with Ansible facts (e.g., `ansible_os_family`) to create separate tasks for each OS family (e.g., Debian, RedHat, Darwin, etc.).\n"
-            f"4. For each OS, install the following programs: {', '.join(programs)}.\n"
-            "5. Handle potential differences in package names across operating systems (e.g., 'httpd' on RedHat vs. 'apache2' on Debian).\n"
-            "6. Use 'ignore_errors: true' for each package installation task to prevent failures if a program is already installed or not found.\n"
-            "7. The playbook should be complete, valid YAML. Do not include any text or explanations before or after the playbook code itself."
-        )
+        if is_local:
+            prompt = (
+                f"Create an Ansible playbook for a local {os_name} environment.\n"
+                "The playbook must:\n"
+                "1. Target `hosts: localhost`.\n"
+                "2. Use `connection: local`.\n"
+                f"3. Install the following programs: {', '.join(programs)}.\n"
+                "4. Use the appropriate Ansible module for the {os_name} OS (e.g., `apt` for Debian/Ubuntu, `homebrew` for macOS).\n"
+                "5. Use 'ignore_errors: true' for each package installation task.\n"
+                "6. The playbook should be complete, valid YAML. Do not include any text or explanations before or after the playbook code itself."
+            )
+        else:
+            prompt = (
+                "Create a universal Ansible playbook to install a list of required programs on multiple operating systems.\n\n"
+                "The playbook must:\n"
+                "1. Target all hosts in the inventory (`hosts: all`).\n"
+                "2. Gather facts to determine the OS of each host.\n"
+                "3. Use 'when' conditions with Ansible facts (e.g., `ansible_os_family`) to create separate tasks for each OS family (e.g., Debian, RedHat, Darwin).\n"
+                f"4. For each OS, install the following programs: {', '.join(programs)}.\n"
+                "5. Handle potential differences in package names across operating systems.\n"
+                "6. Use 'ignore_errors: true' for each package installation task.\n"
+                "7. The playbook should be complete, valid YAML. Do not include any text or explanations before or after the playbook code itself."
+            )
 
     from openai import OpenAI
     import time
@@ -319,7 +340,8 @@ def main():
 
     print("Generating Ansible playbook...")
 
-    playbook_content = generate_playbook(client, programs)
+    is_local_run = not args.inventory
+    playbook_content = generate_playbook(client, programs, is_local=is_local_run)
 
     if not playbook_content or not playbook_content.strip():
         print("Error: Generated playbook content is empty. Aborting.")
@@ -372,7 +394,7 @@ def main():
 
             if attempt < max_attempts - 1:
                 print("Attempting to fix the playbook by regenerating...")
-                playbook_content = generate_playbook(client, programs, error=error_msg, previous_content=playbook_content)
+                playbook_content = generate_playbook(client, programs, is_local=is_local_run, error=error_msg, previous_content=playbook_content)
                 with open(playbook_file, 'w') as f:
                     f.write(playbook_content)
                 print("Updated playbook:")

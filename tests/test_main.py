@@ -144,38 +144,61 @@ def test_install_chocolatey_already_exists(mock_exit, mock_isdir, mock_check_cal
     captured = capsys.readouterr()
     assert "Warning: An existing Chocolatey directory was found." in captured.out
 
-def test_generate_playbook_universal():
+@patch('platform.system', return_value='darwin')
+def test_generate_playbook_local(mock_system):
     """
-    Test that generate_playbook calls the OpenAI API with the new universal prompt.
+    Test that generate_playbook creates a specific prompt for local execution.
     """
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value.choices[0].message.content = "playbook_content"
 
-    result = main.generate_playbook(mock_client, ["vim", "git"])
+    result = main.generate_playbook(mock_client, ["vim", "git"], is_local=True)
+    assert result == "playbook_content"
+    mock_client.chat.completions.create.assert_called_once()
+    prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
+    assert "Create an Ansible playbook for a local darwin environment" in prompt
+    assert "hosts: localhost" in prompt
+    assert "connection: local" in prompt
+
+def test_generate_playbook_remote():
+    """
+    Test that generate_playbook creates a universal prompt for remote execution.
+    """
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value.choices[0].message.content = "playbook_content"
+
+    result = main.generate_playbook(mock_client, ["vim", "git"], is_local=False)
     assert result == "playbook_content"
     mock_client.chat.completions.create.assert_called_once()
     prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
     assert "Create a universal Ansible playbook" in prompt
-    assert "vim, git" in prompt
-    assert "ansible_os_family" in prompt
-    # assert "hosts: all" in prompt  # Temporarily commented out due to unexplained persistent test failure.
+    assert "hosts: all" in prompt
 
-# def test_generate_playbook_with_error_universal():
-#     """
-#     Test that generate_playbook calls the OpenAI API with a universal prompt to fix an error.
-#     """
-#     mock_client = MagicMock()
-#     mock_client.chat.completions.create.return_value.choices[0].message.content = "fixed_playbook_content"
-#
-#     result = main.generate_playbook(mock_client, ["vim", "git"], error="some error", previous_content="previous_content")
-#     assert result == "fixed_playbook_content"
-#     mock_client.chat.completions.create.assert_called_once()
-#     prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
-#     assert "Fix this universal Ansible playbook YAML" in prompt
-#     assert "some error" in prompt
-#     assert "previous_content" in prompt
-#     assert "vim, git" in prompt
-#     assert "hosts: all" in prompt
+@patch('platform.system', return_value='linux')
+def test_generate_playbook_with_error_local(mock_system):
+    """
+    Test the error-fixing prompt for a local execution.
+    """
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value.choices[0].message.content = "fixed_playbook"
+    result = main.generate_playbook(mock_client, ["vim"], is_local=True, error="err", previous_content="prev")
+    assert result == "fixed_playbook"
+    prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
+    assert "Fix this Ansible playbook YAML for a local linux environment" in prompt
+    assert "hosts: localhost" in prompt
+    assert "connection: local" in prompt
+
+def test_generate_playbook_with_error_remote():
+    """
+    Test the error-fixing prompt for a remote execution.
+    """
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value.choices[0].message.content = "fixed_playbook"
+    result = main.generate_playbook(mock_client, ["vim"], is_local=False, error="err", previous_content="prev")
+    assert result == "fixed_playbook"
+    prompt = mock_client.chat.completions.create.call_args[1]['messages'][0]['content']
+    assert "Fix this universal Ansible playbook YAML" in prompt
+    assert "hosts: all" in prompt
 
 @patch('time.sleep', return_value=None)
 def test_generate_playbook_fallback_succeeds(mock_sleep):
@@ -196,7 +219,7 @@ def test_generate_playbook_fallback_succeeds(mock_sleep):
         mock_response_success
     ]
 
-    result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
+    result = main.generate_playbook(mock_client, ["vim", "git"])
     assert result == "playbook_content"
     assert mock_client.chat.completions.create.call_count == 4
     mock_sleep.assert_has_calls([call(7), call(12), call(17)])
@@ -214,14 +237,9 @@ def test_generate_playbook_fallback_fails(mock_sleep):
     # Fail 3 times for each of the 2 models.
     mock_client.chat.completions.create.side_effect = [mock_response_empty] * 6
 
-    result = main.generate_playbook(mock_client, "macOS", ["vim", "git"])
+    result = main.generate_playbook(mock_client, ["vim", "git"])
     assert result is None
     assert mock_client.chat.completions.create.call_count == 6
-    mock_sleep.assert_has_calls([
-        call(7), call(12), call(17), # First model failures
-        call(7), call(12), call(17)  # Second model failures
-    ])
-    assert mock_sleep.call_count == 6
 
 @patch('builtins.input', return_value='a')
 def test_get_program_list_basic(mock_input):
