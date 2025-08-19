@@ -40,8 +40,12 @@ def install_pip():
 def install_package(package):
     print(f"Installing {package}...")
     command = [sys.executable, "-m", "pip", "install", package]
+
+    # Check for virtual environment
+    in_venv = os.getenv('VIRTUAL_ENV') or (hasattr(sys, 'real_prefix')) or (sys.prefix != sys.base_prefix)
+
     # If not in a virtual environment, install to user site-packages
-    if sys.prefix == sys.base_prefix:
+    if not in_venv:
         command.insert(4, "--user")
 
     subprocess.check_call(command)
