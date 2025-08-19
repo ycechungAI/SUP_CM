@@ -85,30 +85,37 @@ def install_chocolatey():
     os.environ["Path"] += os.pathsep + os.path.join(choco_path, "bin")
     print("Chocolatey installed.")
 
-def generate_playbook(client, os_name, programs, template=None, error=None, previous_content=None):
+def generate_playbook(client, programs, template=None, error=None, previous_content=None):
     if error:
         prompt = (
-            f"Fix this Ansible playbook YAML for {os_name} environment based on the following error: {error}\n"
+            f"Fix this universal Ansible playbook YAML based on the following error: {error}\n"
             f"Previous playbook:\n{previous_content}\n"
-            f"The playbook should install a development environment and the user-required programs: {', '.join(programs)}. "
-            f"For each program installation task, make sure to add 'ignore_errors: true' to prevent failures if the program is already installed. "
+            f"The playbook should be a universal playbook that installs the following programs on multiple OS families (Debian, RedHat, Darwin, Windows) using Ansible facts and 'when' conditions: {', '.join(programs)}. "
+            f"For each program installation task, make sure to add 'ignore_errors: true'. "
+            f"The 'hosts' should be set to 'all'. "
             f"Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
         )
     else:
         prompt = (
-            f"Create an Ansible playbook YAML for {os_name} environment in order to install development environment "
-            f"and user required programs: {', '.join(programs)}. "
-            f"For each program installation task, add 'ignore_errors: true' to prevent failures if the program is already installed. "
+            "Create a universal Ansible playbook to install a list of required programs on multiple operating systems.\n\n"
+            "The playbook must:\n"
+            "1. Target all hosts in the inventory (`hosts: all`).\n"
+            "2. Gather facts to determine the OS of each host.\n"
+            "3. Use 'when' conditions with Ansible facts (e.g., `ansible_os_family`) to create separate tasks for each OS family (e.g., Debian, RedHat, Darwin, etc.).\n"
+            f"4. For each OS, install the following programs: {', '.join(programs)}.\n"
+            "5. Handle potential differences in package names across operating systems (e.g., 'httpd' on RedHat vs. 'apache2' on Debian).\n"
+            "6. Use 'ignore_errors: true' for each package installation task to prevent failures if a program is already installed or not found.\n"
+            "7. The playbook should be complete, valid YAML. Do not include any text or explanations before or after the playbook code itself."
         )
-        prompt += "Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
 
     from openai import OpenAI
     import time
 
+    # --- Primary API attempts ---
     models_to_try = ["gpt-4o-mini", "gpt-5-2025-08-07"]
     max_retries_per_model = 3
-    initial_sleep_duration = 7  # seconds
-    increment = 5  # seconds
+    initial_sleep_duration = 7
+    increment = 5
 
     for model in models_to_try:
         sleep_duration = initial_sleep_duration
@@ -132,7 +139,45 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
                 time.sleep(sleep_duration)
                 sleep_duration += increment
 
-    print("Failed to generate playbook with all models after multiple retries.")
+    # --- OpenRouter Fallback ---
+    print("\nAll models on the primary API failed. Trying fallback with OpenRouter...")
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+    if not openrouter_key:
+        print("Warning: OPENROUTER_API_KEY not set. Skipping fallback.")
+        return None
+
+    try:
+        openrouter_client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=openrouter_key,
+        )
+
+        model = "gpt5-mini"
+        sleep_duration = initial_sleep_duration
+        print(f"Attempting to generate playbook with fallback model: {model}")
+        for i in range(max_retries_per_model):
+            try:
+                response = openrouter_client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                content = response.choices[0].message.content
+                if content and content.strip():
+                    print(f"Successfully generated playbook with fallback model: {model}")
+                    return content
+                else:
+                    print(f"Warning: Fallback model {model} returned empty content. Retrying after {sleep_duration} seconds...")
+                    time.sleep(sleep_duration)
+                    sleep_duration += increment
+            except Exception as e:
+                print(f"An error occurred with fallback model {model}: {e}. Retrying after {sleep_duration} seconds...")
+                time.sleep(sleep_duration)
+                sleep_duration += increment
+    except Exception as e:
+        print(f"Failed to initialize or use OpenRouter client: {e}")
+        return None
+
+    print("Failed to generate playbook with all models and fallbacks.")
     return None
 
 def advise_path_update():
@@ -217,6 +262,11 @@ def main():
         action='version',
         version=f'%(prog)s {version}'
     )
+    parser.add_argument(
+        '-i', '--inventory',
+        type=str,
+        help='Path to the Ansible inventory file.'
+    )
     args = parser.parse_args()
 
     os_name = platform.system().lower()
@@ -259,61 +309,9 @@ def main():
         print("No programs specified.")
         return
 
-    try:
-        if os_name == "linux":
-            pm = None
-            if command_exists("apt"):
-                pm = "apt"
-            elif command_exists("dnf"):
-                pm = "dnf"
-            elif command_exists("yum"):
-                pm = "yum"
-            elif command_exists("pacman"):
-                pm = "pacman"
-            elif command_exists("snap"):
-                pm = "snap"
-            else:
-                print("No supported package manager found (apt, dnf, yum, pacman, snap).")
-                return
-
-            print(f"Using package manager: {pm}")
-
-            if pm == "snap":
-                for program in programs:
-                    subprocess.check_call(["sudo", "snap", "install", program])
-            else:
-                if pm == "apt":
-                    subprocess.check_call(["sudo", "apt", "update"])
-                    install_cmd = ["sudo", "apt", "install", "-y"] + programs
-                elif pm == "dnf":
-                    install_cmd = ["sudo", "dnf", "install", "-y"] + programs
-                elif pm == "yum":
-                    install_cmd = ["sudo", "yum", "install", "-y"] + programs
-                elif pm == "pacman":
-                    install_cmd = ["sudo", "pacman", "-Syu", "--noconfirm"] + programs
-
-                subprocess.check_call(install_cmd)
-
-            print("Installation complete.")
-
-        elif os_name == "darwin":
-            if not command_exists("brew"):
-                install_homebrew()
-            install_cmd = ["brew", "install"] + programs
-            subprocess.check_call(install_cmd)
-            print("Installation complete.")
-
-        elif os_name == "windows":
-            if not command_exists("choco"):
-                install_chocolatey()
-            install_cmd = ["choco", "install", "-y"] + programs
-            subprocess.check_call(install_cmd)
-            print("Installation complete.")
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error during installation: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+    # The direct installation logic that was previously here has been removed.
+    # All package installation is now handled by the universal Ansible playbook
+    # to support multi-OS remote machine setups.
 
     if os_name not in ("linux", "darwin"):
         print("Cannot generate and run Ansible playbook on Windows.")
@@ -381,7 +379,7 @@ def main():
         print(f"Warning: Template file not found at {template_path}. Proceeding without a template.")
         playbook_content_template = None
 
-    playbook_content = generate_playbook(client, os_name, programs, template=playbook_content_template)
+    playbook_content = generate_playbook(client, programs, template=playbook_content_template)
 
     if not playbook_content or not playbook_content.strip():
         print("Error: Generated playbook content is empty. Aborting.")
@@ -395,12 +393,17 @@ def main():
     print(playbook_content)
     print("===================")
 
+    # Build the syntax check command, including inventory if provided
+    syntax_check_cmd = ['ansible-playbook', playbook_file, '--syntax-check', '-v']
+    if args.inventory:
+        syntax_check_cmd.extend(['-i', args.inventory])
+
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
             print(f"Attempt {attempt + 1}: Checking playbook syntax...")
             output = subprocess.check_output(
-                ['ansible-playbook', playbook_file, '--syntax-check', '-v'],
+                syntax_check_cmd,
                 stderr=subprocess.STDOUT
             ).decode('utf-8')
             print("Syntax check output:")
@@ -411,6 +414,8 @@ def main():
             error_msg = e.output.decode('utf-8')
             print("Syntax check failed:")
             print(error_msg)
+
+            # Try to fix by stripping markdown fences
             stripped_content = playbook_content.strip()
             if stripped_content.startswith('```yaml') and stripped_content.endswith('```'):
                 print("Detected YAML code block fences. Removing them and retrying syntax check.")
@@ -426,8 +431,8 @@ def main():
                 continue
 
             if attempt < max_attempts - 1:
-                print("Attempting to fix the playbook...")
-                playbook_content = generate_playbook(client, os_name, programs, error=error_msg, previous_content=playbook_content)
+                print("Attempting to fix the playbook by regenerating...")
+                playbook_content = generate_playbook(client, programs, error=error_msg, previous_content=playbook_content)
                 with open(playbook_file, 'w') as f:
                     f.write(playbook_content)
                 print("Updated playbook:")
@@ -439,7 +444,10 @@ def main():
     # Run the playbook
     try:
         print("Running the playbook...")
-        subprocess.check_call(['ansible-playbook', playbook_file, '-v'])
+        run_cmd = ['ansible-playbook', playbook_file, '-v']
+        if args.inventory:
+            run_cmd.extend(['-i', args.inventory])
+        subprocess.check_call(run_cmd)
         print("Playbook executed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error running playbook: {e}")
