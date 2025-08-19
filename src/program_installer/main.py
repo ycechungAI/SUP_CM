@@ -37,8 +37,8 @@ def install_pip():
     os.remove(get_pip_path)
     print("Pip installed successfully.")
 
-def install_package(package):
-    print(f"Installing {package}...")
+def _run_pip_install(package):
+    """Constructs and runs a pip install command, handling virtual environments."""
     command = [sys.executable, "-m", "pip", "install", package]
 
     # Check for virtual environment
@@ -49,6 +49,10 @@ def install_package(package):
         command.insert(4, "--user")
 
     subprocess.check_call(command)
+
+def install_package(package):
+    print(f"Installing {package}...")
+    _run_pip_install(package)
     print(f"{package} installed successfully.")
 
 def command_exists(cmd):
@@ -157,10 +161,11 @@ def ensure_ansible_installed():
                 subprocess.check_call(["brew", "install", "ansible"])
             except subprocess.CalledProcessError:
                 print("Homebrew install failed, trying pip install...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "ansible"])
+                _run_pip_install("ansible")
                 advise_path_update()
         elif os_name == "linux":
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "ansible"])
+            print("Installing Ansible with pip...")
+            _run_pip_install("ansible")
             advise_path_update()
         else:
             print("Automatic Ansible install not supported for this OS.")
