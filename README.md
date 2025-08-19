@@ -56,10 +56,10 @@ To run the project on your local machine for development purposes, follow these 
     python3 -m venv .venv
     . .\.venv\Scripts\Activate.ps1
     ```
-    macOS
+    macOS & linux
     ```bash
     python3 -m venv .venv
-    source .venv\bin\activate
+    source .venv/bin/activate
 
     ```
 
