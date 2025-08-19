@@ -63,7 +63,14 @@ To run the project on your local machine for development purposes, follow these 
     ```bash
     python3 -m venv .venv
     source .venv/bin/activate
+    ```
 
+
+    ```python3
+    python3 -m pip install --upgrade build
+    python3 -m build
+    python3 -m pip install ./dist/aes_cm-0.1-py3-none-any.whl
+    python3 -m pip install ./dist/aes_cm-0.1.tar.gz
     ```
 
 4.  **Install the project in editable mode:**
