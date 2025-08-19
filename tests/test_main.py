@@ -41,45 +41,45 @@ def test_install_pip(mock_remove, mock_check_call, mock_urlretrieve):
     mock_check_call.assert_called_once_with([sys.executable, "get-pip.py", "--user"])
     mock_remove.assert_called_once_with("get-pip.py")
 
-@patch('subprocess.check_call')
-def test_install_package(mock_check_call):
+@patch('program_installer.main._run_pip_install')
+def test_install_package(mock_run_pip):
     """
-    Test that install_package calls pip to install a package.
+    Test that install_package calls _run_pip_install.
     """
     main.install_package("my-package")
-    mock_check_call.assert_called_once_with([sys.executable, "-m", "pip", "install", "--user", "my-package"])
+    mock_run_pip.assert_called_once_with("my-package")
 
-def test_install_package_no_venv():
+def test_run_pip_install_no_venv():
     """
-    Test that install_package uses --user when not in a venv.
+    Test that _run_pip_install uses --user when not in a venv.
     """
     with patch('subprocess.check_call') as mock_check_call, \
          patch('os.getenv', return_value=None), \
          patch('sys.prefix', '/usr'), \
          patch('sys.base_prefix', '/usr'):
-        main.install_package("my-package")
+        main._run_pip_install("my-package")
         expected_command = [sys.executable, "-m", "pip", "install", "--user", "my-package"]
         mock_check_call.assert_called_once_with(expected_command)
 
-def test_install_package_in_venv_by_prefix():
+def test_run_pip_install_in_venv_by_prefix():
     """
-    Test that install_package does not use --user when in a venv (detected by sys.prefix).
+    Test that _run_pip_install does not use --user when in a venv (detected by sys.prefix).
     """
     with patch('subprocess.check_call') as mock_check_call, \
          patch('os.getenv', return_value=None), \
          patch('sys.prefix', '/app/.venv'), \
          patch('sys.base_prefix', '/usr'):
-        main.install_package("my-package")
+        main._run_pip_install("my-package")
         expected_command = [sys.executable, "-m", "pip", "install", "my-package"]
         mock_check_call.assert_called_once_with(expected_command)
 
-def test_install_package_in_venv_by_env_var():
+def test_run_pip_install_in_venv_by_env_var():
     """
-    Test that install_package does not use --user when in a venv (detected by VIRTUAL_ENV).
+    Test that _run_pip_install does not use --user when in a venv (detected by VIRTUAL_ENV).
     """
     with patch('subprocess.check_call') as mock_check_call, \
          patch('os.getenv', return_value='/app/.venv'):
-        main.install_package("my-package")
+        main._run_pip_install("my-package")
         expected_command = [sys.executable, "-m", "pip", "install", "my-package"]
         mock_check_call.assert_called_once_with(expected_command)
 
@@ -365,3 +365,37 @@ def test_main_developer_list(
 
     mock_generate_playbook.assert_called_once()
     assert mock_generate_playbook.call_args[1]['template'] == expected_template
+
+@patch('platform.system', return_value='linux')
+@patch('program_installer.main.command_exists', return_value=False)
+@patch('program_installer.main._run_pip_install')
+@patch('program_installer.main.advise_path_update')
+def test_ensure_ansible_installed_linux(mock_advise, mock_run_pip, mock_exists, mock_system):
+    """
+    Test that ensure_ansible_installed uses pip to install ansible on Linux.
+    """
+    mock_exists.side_effect = [False, True] # ansible-playbook not found, then found
+    main.ensure_ansible_installed()
+    mock_run_pip.assert_called_once_with("ansible")
+    mock_advise.assert_called_once()
+
+@patch('platform.system', return_value='darwin')
+@patch('program_installer.main.command_exists', return_value=False)
+@patch('subprocess.check_call')
+@patch('program_installer.main._run_pip_install')
+@patch('program_installer.main.advise_path_update')
+def test_ensure_ansible_installed_macos_fallback(mock_advise, mock_run_pip, mock_check_call, mock_exists, mock_system):
+    """
+    Test that ensure_ansible_installed falls back to pip on macOS if brew fails.
+    """
+    def check_call_side_effect(cmd, shell=False):
+        if "brew install ansible" in " ".join(cmd):
+            raise subprocess.CalledProcessError(1, cmd)
+        # For other calls like install_homebrew, do nothing
+        pass
+
+    mock_check_call.side_effect = check_call_side_effect
+    mock_exists.side_effect = [False, False, True] # ansible not found, brew not found, then ansible found
+    main.ensure_ansible_installed()
+    mock_run_pip.assert_called_once_with("ansible")
+    mock_advise.assert_called_once()
