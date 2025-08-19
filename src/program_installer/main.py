@@ -7,17 +7,15 @@ import os
 import urllib.request
 import shutil
 
-BASIC_PROGRAMS = {
-    "linux": ["vlc", "docker.io", "git", "code"],
-    "darwin": ["vlc", "docker", "git", "visual-studio-code", "google-chrome"],
-    "windows": ["vlc", "docker-desktop", "git", "vscode", "googlechrome"]
-}
+# Universal program lists
+UNIVERSAL_BASIC_PROGRAMS = sorted(list(set([
+    "vlc", "docker", "git", "vscode", "chrome"
+])))
 
-DEVELOPER_PROGRAMS = {
-    "linux": ["git", "docker.io", "code", "postman", "dbeaver-ce", "libreoffice", "evince", "slack", "vlc", "gimp", "spotify-client"],
-    "darwin": ["git", "docker", "visual-studio-code", "postman", "dbeaver-community", "libreoffice", "adobe-acrobat-reader", "slack", "vlc", "gimp", "spotify"],
-    "windows": ["git", "docker-desktop", "vscode", "postman", "dbeaver", "libreoffice", "adobereader", "slack", "vlc", "gimp", "spotify"]
-}
+UNIVERSAL_DEVELOPER_PROGRAMS = sorted(list(set([
+    "git", "docker", "vscode", "postman", "dbeaver", "libreoffice",
+    "slack", "vlc", "gimp", "spotify", "adobe-reader"
+])))
 
 def check_pip():
     try:
@@ -245,7 +243,7 @@ def ensure_ansible_installed():
         sys.exit(1)
     print("Ansible installed successfully.")
 
-def get_program_list(os_name):
+def get_program_list():
     while True:
         choice = input(
             "Choose an option:\n"
@@ -256,9 +254,9 @@ def get_program_list(os_name):
         ).lower()
 
         if choice == 'a':
-            return choice, BASIC_PROGRAMS.get(os_name, [])
+            return choice, UNIVERSAL_BASIC_PROGRAMS
         elif choice == 'b':
-            return choice, DEVELOPER_PROGRAMS.get(os_name, [])
+            return choice, UNIVERSAL_DEVELOPER_PROGRAMS
         elif choice == 'c':
             programs_input = input("Enter the list of programs to install, separated by commas: ").strip()
             return choice, [p.strip() for p in programs_input.split(',') if p.strip()]
@@ -324,7 +322,9 @@ def main():
         print("Ansible does not support Windows as a control machine natively.")
         print("Skipping Ansible installation. Proceeding with program installation if applicable.")
 
-    choice, programs = get_program_list(os_name)
+    # The os_name is no longer needed for program list selection.
+    # The debug prints are removed as the issue is resolved.
+    choice, programs = get_program_list()
 
     if not programs:
         print("No programs specified.")

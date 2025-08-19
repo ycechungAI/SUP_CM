@@ -246,25 +246,25 @@ def test_get_program_list_basic(mock_input):
     """
     Test that get_program_list returns the basic list when 'a' is chosen.
     """
-    choice, programs = main.get_program_list('darwin')
+    choice, programs = main.get_program_list()
     assert choice == 'a'
-    assert programs == main.BASIC_PROGRAMS['darwin']
+    assert programs == main.UNIVERSAL_BASIC_PROGRAMS
 
 @patch('builtins.input', return_value='b')
 def test_get_program_list_developer(mock_input):
     """
     Test that get_program_list returns the developer list when 'b' is chosen.
     """
-    choice, programs = main.get_program_list('windows')
+    choice, programs = main.get_program_list()
     assert choice == 'b'
-    assert programs == main.DEVELOPER_PROGRAMS['windows']
+    assert programs == main.UNIVERSAL_DEVELOPER_PROGRAMS
 
 @patch('builtins.input', side_effect=['c', 'custom-prog1, custom-prog2'])
 def test_get_program_list_custom(mock_input):
     """
     Test that get_program_list returns a custom list when 'c' is chosen.
     """
-    choice, programs = main.get_program_list('linux')
+    choice, programs = main.get_program_list()
     assert choice == 'c'
     assert programs == ['custom-prog1', 'custom-prog2']
 
