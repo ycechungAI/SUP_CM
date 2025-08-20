@@ -108,12 +108,6 @@ This project includes a comprehensive test suite using `pytest`. To run the test
 
 This project is licensed under the terms of the [LICENSE](LICENSE) file.
 
-## Other Links
-
-- [AI/ML API Hackathon](https://aimlapi.com/app/)
-- [LabLab Apps](https://lablab.ai/apps/)
-- [AI/ML API Documentation](https://docs.aimlapi.com/)
-
 ## Authors
 - Eugene Chung
 - Google Jules AI
