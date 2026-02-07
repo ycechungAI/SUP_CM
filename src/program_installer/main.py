@@ -7,6 +7,16 @@ import os
 import urllib.request
 import shutil
 
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    load_dotenv = None
+
+try:
+    from openai import OpenAI
+except ModuleNotFoundError:
+    OpenAI = None
+
 # Universal program lists
 UNIVERSAL_BASIC_PROGRAMS = sorted(list(set([
     "vlc", "docker", "git", "vscode", "chrome"
@@ -127,7 +137,6 @@ def generate_playbook(client, programs, is_local=True, error=None, previous_cont
                 "7. The playbook should be complete, valid YAML. Do not include any text or explanations before or after the playbook code itself."
             )
 
-    from openai import OpenAI
     import time
 
     # --- Primary API attempts ---
@@ -300,8 +309,10 @@ def main():
     install_package("python-dotenv")
     install_package("openai")
 
-    from dotenv import load_dotenv
-    from openai import OpenAI
+    if load_dotenv is None:
+        raise ModuleNotFoundError("python-dotenv is required. Please install it before running.")
+    if OpenAI is None:
+        raise ModuleNotFoundError("openai is required. Please install it before running.")
 
     load_dotenv()
     api_key = os.environ.get("OPENAI_API_KEY")

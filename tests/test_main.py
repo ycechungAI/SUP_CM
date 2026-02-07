@@ -298,44 +298,12 @@ def test_main_version(mock_version, capsys):
     captured = capsys.readouterr()
     assert "program-installer 0.1" in captured.out
 
-@patch('platform.system', return_value='linux')
-@patch('sys.argv', ['program-installer', '-i', 'my_hosts.yml'])
-@patch('program_installer.main.check_pip', return_value=True)
-@patch('program_installer.main.install_package')
-@patch('dotenv.load_dotenv')
-@patch('openai.OpenAI')
-@patch('builtins.input', side_effect=['c', 'vim'])
-@patch('program_installer.main.command_exists', return_value=True)
-@patch('subprocess.check_call')
-@patch('subprocess.check_output', return_value=b'Syntax check passed')
-@patch('builtins.open', new_callable=mock_open)
-@patch('program_installer.main.generate_playbook', return_value='playbook')
-def test_main_with_inventory(
-    mock_generate_playbook, mock_open_file, mock_check_output, mock_check_call,
-    mock_command_exists, mock_input, mock_openai, mock_load_dotenv,
-    mock_install_package, mock_check_pip, mock_system
-):
-    """
-    Test that the main function correctly uses the --inventory argument.
-    """
-    os.environ['OPENAI_API_KEY'] = 'test_key'
-    main.main()
-
-    # Check that ansible-playbook was called with the inventory for syntax check
-    expected_syntax_cmd = ['ansible-playbook', 'ansible_playbook.yml', '--syntax-check', '-v', '-i', 'my_hosts.yml']
-    mock_check_output.assert_called_once_with(expected_syntax_cmd, stderr=subprocess.STDOUT)
-
-    # Check that ansible-playbook was called with the inventory for the final run
-    expected_run_cmd = ['ansible-playbook', 'ansible_playbook.yml', '-v', '-i', 'my_hosts.yml']
-    # Use assert_any_call because ensure_ansible_installed might also call check_call
-    mock_check_call.assert_any_call(expected_run_cmd)
-
 @patch('platform.system', return_value='darwin')
 @patch('sys.argv', ['program-installer'])
 @patch('program_installer.main.check_pip', return_value=True)
 @patch('program_installer.main.install_package')
-@patch('dotenv.load_dotenv')
-@patch('openai.OpenAI')
+@patch('program_installer.main.load_dotenv')
+@patch('program_installer.main.OpenAI')
 @patch('builtins.input', return_value='b')
 @patch('program_installer.main.command_exists', return_value=True)
 @patch('subprocess.check_call')
@@ -393,7 +361,7 @@ def test_ensure_ansible_installed_linux(mock_advise, mock_run_pip, mock_exists, 
 
 @patch('time.sleep', return_value=None)
 @patch.dict(os.environ, {'OPENROUTER_API_KEY': 'test_openrouter_key'})
-@patch('openai.OpenAI')
+@patch('program_installer.main.OpenAI')
 def test_generate_playbook_openrouter_fallback(mock_openai, mock_sleep):
     """
     Test that generate_playbook falls back to OpenRouter when the primary API fails.
@@ -431,8 +399,8 @@ def test_generate_playbook_openrouter_fallback(mock_openai, mock_sleep):
 @patch('sys.argv', ['program-installer', '-i', 'my_hosts.yml'])
 @patch('program_installer.main.check_pip', return_value=True)
 @patch('program_installer.main.install_package')
-@patch('dotenv.load_dotenv')
-@patch('openai.OpenAI')
+@patch('program_installer.main.load_dotenv')
+@patch('program_installer.main.OpenAI')
 @patch('builtins.input', side_effect=['c', 'vim'])
 @patch('program_installer.main.command_exists', return_value=True)
 @patch('subprocess.check_call')
