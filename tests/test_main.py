@@ -41,6 +41,8 @@ def test_install_pip(mock_remove, mock_check_call, mock_urlretrieve):
     mock_check_call.assert_called_once_with([sys.executable, "get-pip.py", "--user"])
     mock_remove.assert_called_once_with("get-pip.py")
 
+@patch('sys.prefix', '/usr')
+@patch('sys.base_prefix', '/usr')
 @patch('subprocess.check_call')
 def test_install_package(mock_check_call):
     """
@@ -147,7 +149,7 @@ def test_generate_playbook():
     assert "Create an Ansible playbook YAML for macOS" in prompt
     assert "vim, git" in prompt
     assert "ignore_errors: true" in prompt
-    assert template not in prompt
+    assert template in prompt
 
 def test_generate_playbook_with_error():
     """
@@ -243,8 +245,8 @@ def test_get_program_list_custom(mock_input):
 @patch('program_installer.main.check_pip', return_value=True)
 @patch('program_installer.main.install_pip')
 @patch('program_installer.main.install_package')
-@patch('dotenv.load_dotenv')
-@patch('openai.OpenAI')
+@patch('program_installer.main.load_dotenv')
+@patch('program_installer.main.OpenAI')
 @patch('builtins.input', side_effect=['c', 'vim, git'])
 @patch('program_installer.main.command_exists')
 @patch('program_installer.main.install_homebrew')
@@ -329,8 +331,8 @@ def test_main_version(mock_version, capsys):
 @patch('program_installer.main.check_pip', return_value=True)
 @patch('program_installer.main.install_pip')
 @patch('program_installer.main.install_package')
-@patch('dotenv.load_dotenv')
-@patch('openai.OpenAI')
+@patch('program_installer.main.load_dotenv')
+@patch('program_installer.main.OpenAI')
 @patch('builtins.input', return_value='b')
 @patch('program_installer.main.command_exists', return_value=True)
 @patch('subprocess.check_call')

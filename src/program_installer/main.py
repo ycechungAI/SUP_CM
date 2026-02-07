@@ -7,6 +7,16 @@ import os
 import urllib.request
 import shutil
 
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    load_dotenv = None
+
+try:
+    from openai import OpenAI
+except ModuleNotFoundError:
+    OpenAI = None
+
 BASIC_PROGRAMS = {
     "linux": ["vlc", "docker.io", "git", "code"],
     "darwin": ["vlc", "docker", "git", "visual-studio-code", "google-chrome"],
@@ -92,9 +102,10 @@ def generate_playbook(client, os_name, programs, template=None, error=None, prev
             f"and user required programs: {', '.join(programs)}. "
             f"For each program installation task, add 'ignore_errors: true' to prevent failures if the program is already installed. "
         )
+        if template:
+            prompt += f"\nUse the following template as a base:\n{template}\n"
         prompt += "Do not include anything but the complete program and no text before or after answering this prompt and get rid of ''' before and after"
 
-    from openai import OpenAI
     import time
 
     models_to_try = ["gpt-4o-mini", "gpt-5-2025-08-07"]
@@ -398,8 +409,10 @@ def main():
     install_package("python-dotenv")
     install_package("openai")
 
-    from dotenv import load_dotenv
-    from openai import OpenAI
+    if load_dotenv is None:
+        raise ModuleNotFoundError("python-dotenv is required. Please install it before running.")
+    if OpenAI is None:
+        raise ModuleNotFoundError("openai is required. Please install it before running.")
 
     load_dotenv()
     api_key = os.environ.get("OPENAI_API_KEY")
